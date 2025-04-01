@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LuxTransfer Cyprus</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: 'Manrope', sans-serif;
+    }
+    [data-animate] {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: all 0.8s ease;
+    }
+    [data-animate].in-view {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    #passenger-tip {
+      font-size: 0.875rem;
+      color: #a0aec0;
+    }
+    .suggestions {
+      position: absolute;
+      background-color: white;
+      color: black;
+      z-index: 50;
+      border-radius: 0.5rem;
+      margin-top: 0.25rem;
+      width: 100%;
+      max-height: 150px;
+      overflow-y: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .suggestions div {
+      padding: 0.5rem;
+      cursor: pointer;
+    }
+    .suggestions div:hover {
+      background-color: #f3f4f6;
+    }
+  </style>
+  <script>
+    const locations = [
+      "Ag.Tychonas", "Mesa Geitonia", "Old Port Limassol", "PFO", "Pafos Venus",
+      "Kissonerga", "Coral Bay", "Pegeia", "Polis", "City of dreams",
+      "Nicosia", "Larnaca", "Agia Napa", "Protaras", "Limassol",
+      "Pafos city", "Anassa", "Larnaca Airport", "Paphos Airport"
+    ];
+  
+    const priceMap = {
+      "Larnaca Airport": {
+        "Ag.Tychonas": { "E-Class": { day: 70, night: 80 }, "V-Class": { day: 100, night: 120 } },
+        "Mesa Geitonia": { "E-Class": { day: 70, night: 80 }, "V-Class": { day: 100, night: 120 } },
+        "Old Port Limassol": { "E-Class": { day: 70, night: 80 }, "V-Class": { day: 100, night: 120 } },
+        "PFO": { "E-Class": { day: 130, night: 140 }, "V-Class": { day: 150, night: 170 } },
+        "Pafos Venus": { "E-Class": { day: 130, night: 140 }, "V-Class": { day: 150, night: 170 } },
+        "Kissonerga": { "E-Class": { day: 140, night: 150 }, "V-Class": { day: 160, night: 180 } },
+        "Coral Bay": { "E-Class": { day: 150, night: 160 }, "V-Class": { day: 165, night: 185 } },
+        "Pegeia": { "E-Class": { day: 150, night: 160 }, "V-Class": { day: 185, night: 205 } },
+        "Polis": { "E-Class": { day: 200, night: 210 }, "V-Class": { day: 230, night: 250 } },
+        "City of dreams": { "E-Class": { day: 90, night: 100 }, "V-Class": { day: 130, night: 150 } },
+        "Nicosia": { "E-Class": { day: 50, night: 60 }, "V-Class": { day: 70, night: 90 } },
+        "Larnaca": { "E-Class": { day: 25, night: 30 }, "V-Class": { day: 40, night: 60 } },
+        "Agia Napa": { "E-Class": { day: 70, night: 80 }, "V-Class": { day: 100, night: 120 } },
+        "Protaras": { "E-Class": { day: 80, night: 90 }, "V-Class": { day: 110, night: 130 } }
+      },
+      "Paphos Airport": {
+        "Nicosia": { "E-Class": { day: 150, night: 160 }, "V-Class": { day: 175, night: 195 } },
+        "Larnaca": { "E-Class": { day: 130, night: 140 }, "V-Class": { day: 150, night: 170 } },
+        "Agia Napa": { "E-Class": { day: 170, night: 200 }, "V-Class": { day: 190, night: 210 } },
+        "Protaras": { "E-Class": { day: 180, night: 200 }, "V-Class": { day: 200, night: 220 } },
+        "Limassol": { "E-Class": { day: 80, night: 90 }, "V-Class": { day: 100, night: 120 } },
+        "City of dreams": { "E-Class": { day: 70, night: 80 }, "V-Class": { day: 70, night: 90 } },
+        "Pafos city": { "E-Class": { day: 30, night: 40 }, "V-Class": { day: 40, night: 60 } },
+        "Kissonerga": { "E-Class": { day: 40, night: 50 }, "V-Class": { day: 50, night: 70 } },
+        "Coral Bay": { "E-Class": { day: 60, night: 70 }, "V-Class": { day: 60, night: 80 } },
+        "Pegeia": { "E-Class": { day: 60, night: 70 }, "V-Class": { day: 70, night: 90 } },
+        "Anassa": { "E-Class": { day: 100, night: 110 }, "V-Class": { day: 100, night: 120 } }
+      }
+    };
+  
+    function getReversiblePrice(from, to, carType, tariff) {
+      if (priceMap[from] && priceMap[from][to] && priceMap[from][to][carType]) {
+        return priceMap[from][to][carType][tariff];
+      }
+      if (priceMap[to] && priceMap[to][from] && priceMap[to][from][carType]) {
+        return priceMap[to][from][carType][tariff];
+      }
+      return null;
+    }
+  
+    function showAutoPriceResult(from, to, carType, tariff) {
+      const result = document.getElementById("price-result");
+      const price = getReversiblePrice(from, to, carType, tariff);
+      if (price !== null) {
+        result.innerHTML = `<span class='font-semibold'>${price}€</span> <span class='text-sm text-gray-300'>(${tariff === 'night' ? 'Night Tariff' : 'Day Tariff'})</span>`;
+      } else {
+        result.innerHTML = `<span class='text-yellow-300'>We will contact you to discuss the price.</span>`;
+      }
+    }
+  
+
+    function getTariffType(timeStr) {
+      const hour = new Date(timeStr).getHours();
+      return (hour >= 20 || hour < 6) ? 'night' : 'day';
+    }
+
+    function showSuggestions(input, containerId) {
+      const val = input.value.toLowerCase();
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      if (!val) return;
+      const matches = locations.filter(loc => loc.toLowerCase().includes(val));
+      matches.forEach(loc => {
+        const div = document.createElement('div');
+        div.textContent = loc;
+        div.onclick = () => {
+          input.value = loc;
+          container.innerHTML = '';
+          updatePrice();
+        };
+        container.appendChild(div);
+      });
+    }
+
+    function updatePrice() {
+      const from = document.getElementById("from").value.trim();
+      const to = document.getElementById("to").value.trim();
+      const datetime = document.getElementById("datetime").value;
+      const passengers = parseInt(document.getElementById("passengers").value);
+      const carType = passengers > 4 ? "V-Class" : "E-Class";
+      const result = document.getElementById("price-result");
+
+      if (!from || !to || !datetime) return;
+      const tariff = getTariffType(datetime);
+      let priceText = "We will contact you to discuss the price.";
+
+      if (
+        priceMap[from] &&
+        priceMap[from][to] &&
+        priceMap[from][to][carType]
+      ) {
+        const price = priceMap[from][to][carType][tariff];
+        priceText = `${price}€ (${tariff === 'night' ? 'Night Tariff' : 'Day Tariff'})`;
+      }
+
+      result.textContent = priceText;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const datetimeInput = document.getElementById("datetime");
+      const now = new Date();
+      now.setHours(now.getHours() + 24);
+      datetimeInput.min = now.toISOString().slice(0, 16);
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("in-view");
+          }
+        });
+      }, { threshold: 0.1 });
+
+      document.querySelectorAll('[data-animate]').forEach(el => observer.observe(el));
+
+      const passengerInput = document.getElementById("passengers");
+      const tip = document.getElementById("passenger-tip");
+      passengerInput.addEventListener("input", () => {
+        if (parseInt(passengerInput.value) > 4) {
+          tip.textContent = "Note: V-Class will be automatically selected for 5+ passengers.";
+        } else {
+          tip.textContent = "";
+        }
+        updatePrice();
+      });
+
+      document.getElementById("from").addEventListener("input", e => showSuggestions(e.target, "from-suggestions"));
+      document.getElementById("to").addEventListener("input", e => showSuggestions(e.target, "to-suggestions"));
+      document.getElementById("datetime").addEventListener("change", updatePrice);
+      document.getElementById("to").addEventListener("change", updatePrice);
+      document.getElementById("from").addEventListener("change", updatePrice);
+    });
+
+    function calculatePrice() {
+      const from = document.getElementById("from").value.trim();
+      const to = document.getElementById("to").value.trim();
+      const passengers = parseInt(document.getElementById("passengers").value);
+      const luggage = document.getElementById("luggage").value;
+      const datetime = document.getElementById("datetime").value;
+      const phone = document.getElementById("phone");
+      if (phone && !/^\d+$/.test(phone.value)) {
+        alert("Please enter a valid phone number with digits only.");
+        return;
+      }
+      const flight = document.getElementById("flight").value.trim();
+
+      if (!from || !to || !passengers || !luggage || !datetime) {
+        alert("Please fill in all required fields before proceeding.");
+        return;
+      }
+
+      let carType = passengers > 4 ? "V-Class" : "E-Class";
+      let price = 0;
+
+      if (
+        priceMap[from] &&
+        priceMap[from][to] &&
+        priceMap[from][to][carType]
+      ) {
+        const tariff = getTariffType(datetime);
+        price = priceMap[from][to][carType][tariff];
+      }
+
+      const params = new URLSearchParams({
+        from, to, passengers, luggage, datetime, flight, carType, price
+      });
+      window.location.href = `confirmation.html?${params.toString()}`;
+    }
+  </script>
+</head>
+<body class="text-white min-h-screen overflow-x-hidden bg-black">
+<!-- Language Switcher -->
+<div class="absolute top-4 left-4 z-50 flex gap-2 md:top-6 md:left-6">
+  <button class="px-3 py-1 text-sm bg-white/20 hover:bg-white/40 text-white rounded-lg">🇬🇧 EN</button>
+  <button class="px-3 py-1 text-sm bg-white/20 hover:bg-white/40 text-white rounded-lg">🇷🇺 RU</button>
+  <button class="px-3 py-1 text-sm bg-white/20 hover:bg-white/40 text-white rounded-lg">🇬🇷 GR</button>
+</div>
+<!-- Booking Section -->
+<div class="min-h-[100dvh] flex items-center justify-center py-12 px-4 relative" style="background-image: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.7)), url('sea.jpg'); background-size: cover; background-position: center;">
+  <section id="booking" class="w-full max-w-6xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+    <div class="bg-black/40 backdrop-blur-sm p-6 rounded-xl w-fit space-y-2" data-animate>
+      <h1 class="text-5xl font-bold mb-4 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">LuxTransfer</h1>
+      <p class="text-lg text-gray-200 max-w-md drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">Premium transfer service across Cyprus. Elegant cars, professional drivers, simple booking.</p>
+    </div>
+    <div class="bg-white/10 backdrop-blur-sm text-white rounded-2xl shadow-xl p-8 border border-white/20 relative" data-animate>
+      <div class="space-y-4">
+        <div class="relative">
+          <label class="block font-medium">Pickup Location</label>
+          <input type="text" id="from" placeholder="e.g. Larnaca Airport" class="w-full p-3 rounded-lg bg-white/20 border border-white/30 placeholder-white">
+          <div id="from-suggestions" class="suggestions"></div>
+        </div>
+        <div class="relative">
+          <label class="block font-medium">Drop-off Location</label>
+          <input type="text" id="to" placeholder="e.g. Limassol Marina" class="w-full p-3 rounded-lg bg-white/20 border border-white/30 placeholder-white">
+          <div id="to-suggestions" class="suggestions"></div>
+        </div>
+        <div>
+          <label class="block font-medium">Passengers</label>
+          <input type="number" id="passengers" min="1" max="6" value="1" class="w-full p-3 rounded-lg bg-white/20 border border-white/30">
+          <p id="passenger-tip" class="mt-1"></p>
+        </div>
+        <div>
+          <label class="block font-medium">Luggage</label>
+          <select id="luggage" class="w-full p-3 rounded-lg bg-white/20 border border-white/30 text-black">
+            <option value="light">Backpacks Only</option>
+            <option value="medium">2–3 Medium Suitcases</option>
+            <option value="heavy">4–6 Large Suitcases</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-medium">Date & Time</label>
+          <input type="datetime-local" id="datetime" class="w-full p-3 rounded-lg bg-white/20 border border-white/30">
+        </div>
+        <div>
+          <label class="block font-medium">Flight Number (optional)</label>
+          <input type="text" id="flight" class="w-full p-3 rounded-lg bg-white/20 border border-white/30">
+        </div>
+        <div class="pt-2">
+          <p class="text-sm text-gray-300">Price: <span id="price-result" class="font-semibold">—</span></p>
+        </div>
+        <button onclick="calculatePrice()" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold py-3 rounded-lg mt-4 transition-all">Calculate & Book</button>
+      </div>
+      </div>
+    </section>
+    <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-3xl text-white animate-bounce">↓</div>
+  </div>
+  
+  <!-- Vehicles Section -->
+  <section class="h-screen flex flex-col md:flex-row items-center justify-center bg-gradient-to-b from-sky-800 to-blue-600 p-10 text-center" data-animate>
+    <div class="max-w-md mx-auto transform transition hover:scale-105 duration-500">
+      <img src="vclass.jpg" alt="V-Class" class="rounded-lg shadow mb-6">
+      <h2 class="text-3xl font-bold mb-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Mercedes V-Class</h2>
+      <p class="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Spacious and luxurious, ideal for families or groups up to 6 passengers.</p>
+    </div>
+    <div class="max-w-md mx-auto mt-10 md:mt-0 md:ml-10 transform transition hover:scale-105 duration-500">
+      <img src="eclass.jpg" alt="E-Class" class="rounded-lg shadow mb-6">
+      <h2 class="text-3xl font-bold mb-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Mercedes E-Class</h2>
+      <p class="drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">Executive style for solo travelers or couples seeking elegance and comfort.</p>
+    </div>
+  </section>
+
+  <!-- Why Choose Us Section -->
+  <section class="h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-600 to-blue-500 px-6 text-center" data-animate>
+    <h2 class="text-4xl font-bold mb-6">Why Choose LuxTransfer?</h2>
+    <p class="max-w-2xl text-lg">We offer fixed rates, professional English-speaking drivers, comfortable modern vehicles, and guaranteed reliability. Book in advance and enjoy worry-free travel in Cyprus.</p>
+  </section>
+
+  <!-- How It Works Section -->
+  <section class="h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-500 to-blue-700 px-6 text-center" data-animate>
+    <h2 class="text-4xl font-bold mb-6">How It Works</h2>
+    <ol class="space-y-4 text-left max-w-xl mx-auto text-lg">
+      <li><strong>Step 1:</strong> Fill out the booking form with your transfer details.</li>
+      <li><strong>Step 2:</strong> See instant pricing and confirm your booking.</li>
+      <li><strong>Step 3:</strong> Receive confirmation, and we’ll handle the rest!</li>
+    </ol>
+  </section>
+
+  <!-- Support Section -->
+  <section class="h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-700 to-slate-800 px-6 text-center" data-animate>
+    <h2 class="text-4xl font-bold mb-4">📞 Need Help?</h2>
+    <p class="text-lg">Our support team is available 24/7.</p>
+    <p class="text-2xl mt-2">Call us at <a href="tel:+35799123456" class="underline">+357 99 123456</a></p>
+  </section>
+</body>
+</html>

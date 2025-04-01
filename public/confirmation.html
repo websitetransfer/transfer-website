@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Booking Confirmation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  
+  <script>
+    const locations = [
+      "Ag. Tychonas", "Episkopi", "Germasogeia", "Kolossi", "Kouklia",
+      "Kyperounta", "Larnaca Airport", "Lefkara", "Limassol Marina",
+      "Mesa Geitonia", "Nicosia", "Old Port Limassol", "Pafos",
+      "Paphos Airport", "Pissouri", "Polemidia", "Troodos"
+    ];
+  
+    const priceMap = {
+      "Larnaca Airport": {
+        "Ag. Tychonas": {
+          "E-Class": { day: 70, night: 80 },
+          "V-Class": { day: 100, night: 120 }
+        },
+        "Mesa Geitonia": {
+          "E-Class": { day: 65, night: 75 },
+          "V-Class": { day: 95, night: 110 }
+        },
+        "Old Port Limassol": {
+          "E-Class": { day: 75, night: 85 },
+          "V-Class": { day: 105, night: 125 }
+        },
+        "Nicosia": {
+          "E-Class": { day: 100, night: 120 },
+          "V-Class": { day: 130, night: 150 }
+        },
+        "Pafos": {
+          "E-Class": { day: 140, night: 160 },
+          "V-Class": { day: 180, night: 210 }
+        }
+      },
+      "Paphos Airport": {
+        "Limassol Marina": {
+          "E-Class": { day: 85, night: 100 },
+          "V-Class": { day: 120, night: 140 }
+        },
+        "Larnaca Airport": {
+          "E-Class": { day: 140, night: 160 },
+          "V-Class": { day: 180, night: 210 }
+        },
+        "Nicosia": {
+          "E-Class": { day: 150, night: 170 },
+          "V-Class": { day: 190, night: 220 }
+        }
+      }
+    };
+  
+    function getTariffType(timeStr) {
+      const hour = new Date(timeStr).getHours();
+      return (hour >= 22 || hour < 6) ? 'night' : 'day';
+    }
+  
+    function validateForm() {
+      const phone = document.querySelector('input[name="phone"]');
+      if (!/^\d+$/.test(phone.value)) {
+        alert("Please enter a valid phone number with digits only.");
+        return false;
+      }
+      return true;
+    }
+  
+    function redirectToThankYou() {
+      setTimeout(() => {
+        window.location.href = "thankyou.html";
+      }, 500);
+    }
+  
+    window.addEventListener("DOMContentLoaded", () => {
+      const params = new URLSearchParams(window.location.search);
+      const detailsDiv = document.getElementById('details');
+  
+      const fields = {
+        from: 'Pickup Location',
+        to: 'Drop-off Location',
+        passengers: 'Passengers',
+        luggage: 'Luggage',
+        datetime: 'Date & Time',
+        flight: 'Flight Number',
+        carType: 'Vehicle Type',
+        price: 'Estimated Price (€)'
+      };
+  
+      const luggageMap = {
+        light: "Backpacks Only",
+        medium: "2–3 Medium Suitcases",
+        heavy: "4–6 Large Suitcases"
+      };
+  
+      const from = params.get('from');
+      const to = params.get('to');
+      const passengers = parseInt(params.get('passengers'));
+      const luggage = params.get('luggage');
+      const datetime = params.get('datetime');
+      const flight = params.get('flight');
+  
+      let carType = passengers > 4 ? 'V-Class' : 'E-Class';
+      let tariff = getTariffType(datetime);
+      let priceText = "We will contact you to discuss the price.";
+      let price = 0;
+  
+      if (
+        priceMap[from] &&
+        priceMap[from][to] &&
+        priceMap[from][to][carType]
+      ) {
+        price = priceMap[from][to][carType][tariff];
+        priceText = `${price}€ (${tariff === 'night' ? 'Night Tariff' : 'Day Tariff'})`;
+      }
+  
+      const displayValues = {
+        from,
+        to,
+        passengers,
+        luggage: luggageMap[luggage] || luggage,
+        datetime,
+        flight,
+        carType,
+        price: priceText
+      };
+  
+      for (const [key, label] of Object.entries(fields)) {
+        const value = displayValues[key] || '—';
+        const row = document.createElement('div');
+        row.innerHTML = `<strong>${label}:</strong> ${value}`;
+        detailsDiv.appendChild(row);
+        const input = document.getElementById(key);
+        if (input) input.value = key === 'price' ? price : (params.get(key) || '');
+      }
+  
+      const map = L.map('map').setView([34.916, 33.634], 8);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'
+      }).addTo(map);
+  
+      function showRoute(from, to) {
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${from}`)
+          .then(res => res.json())
+          .then(fromData => {
+            if (!fromData[0]) return;
+            const fromCoords = [parseFloat(fromData[0].lat), parseFloat(fromData[0].lon)];
+  
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${to}`)
+              .then(res => res.json())
+              .then(toData => {
+                if (!toData[0]) return;
+                const toCoords = [parseFloat(toData[0].lat), parseFloat(toData[0].lon)];
+  
+                const bounds = L.latLngBounds(fromCoords, toCoords);
+                map.fitBounds(bounds);
+  
+                L.marker(fromCoords).addTo(map).bindPopup("Pickup").openPopup();
+                L.marker(toCoords).addTo(map).bindPopup("Drop-off");
+  
+                L.polyline([fromCoords, toCoords], { color: 'lime', weight: 4 }).addTo(map);
+              });
+          });
+      }
+  
+      if (from && to) {
+        showRoute(from, to);
+      }
+    });
+  </script>
+  
+
+  <style>
+    .step {
+      flex: 1;
+      text-align: center;
+      padding: 1rem;
+      font-weight: 600;
+      border-bottom: 4px solid white;
+    }
+    .step.active {
+      color: #22c55e;
+      border-color: #22c55e;
+    }
+    .animate-fade-in {
+      animation: fadeIn 1s ease forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    #map {
+      height: 300px;
+      border-radius: 1rem;
+      overflow: hidden;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
+  <!-- Progress Bar -->
+  <div class="flex justify-center text-lg bg-black/20 backdrop-blur p-4 sticky top-0 z-10">
+    <div class="step">1. Fill Form</div>
+    <div class="step active">2. Confirm</div>
+    <div class="step">3. Done</div>
+  </div>
+
+  <!-- Content -->
+  <div class="flex flex-col items-center justify-center p-4 animate-fade-in">
+    <div class="w-full max-w-2xl bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 shadow-lg">
+      <h2 class="text-3xl font-bold text-center mb-6">✅ Booking Summary</h2>
+      <div id="details" class="space-y-3 text-lg mb-6"></div>
+      <div id="map"></div>
+
+      <h3 class="text-2xl font-semibold mt-8 mb-4">Your Contact Details</h3>
+      <form 
+        action="https://script.google.com/macros/s/AKfycby9lBfJZLeX7s0h1yxcXcSzA_jr2dusvzAcMia0tGkFlULde6aSkM_SnO68mLeRz4HVvQ/exec" 
+        method="POST" 
+        class="space-y-4" 
+        target="hidden_iframe" 
+        onsubmit="redirectToThankYou(); return validateForm();"
+      >
+        <input type="hidden" name="from" id="from">
+        <input type="hidden" name="to" id="to">
+        <input type="hidden" name="passengers" id="passengers">
+        <input type="hidden" name="luggage" id="luggage">
+        <input type="hidden" name="datetime" id="datetime">
+        <input type="hidden" name="flight" id="flight">
+        <input type="hidden" name="carType" id="carType">
+        <input type="hidden" name="price" id="price">
+
+        <input type="text" name="name" placeholder="Your Full Name" required class="w-full p-3 rounded-lg bg-white/20 border border-white/30 placeholder-white">
+        <input type="email" name="email" placeholder="Email Address" required class="w-full p-3 rounded-lg bg-white/20 border border-white/30 placeholder-white">
+        <input type="tel" name="phone" placeholder="Phone Number" required pattern="\d+" title="Digits only" class="w-full p-3 rounded-lg bg-white/20 border border-white/30 placeholder-white">
+
+        <label class="flex items-center gap-2">
+          <input type="checkbox" name="babySeat" value="Yes" class="accent-blue-500">
+          <span>Require baby seat</span>
+        </label>
+
+        <textarea name="comment" placeholder="Additional comments..." class="w-full p-3 rounded-lg bg-white/20 border border-white/30 placeholder-white"></textarea>
+
+        <button type="submit" class="mt-6 w-full bg-green-600 hover:bg-green-700 py-3 text-white rounded-lg text-lg font-semibold transition">Confirm Booking</button>
+      </form>
+      <iframe name="hidden_iframe" style="display:none;"></iframe>
+    </div>
+  </div>
+</body>
+</html>

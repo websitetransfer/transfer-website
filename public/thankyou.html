@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thank You</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-image: url('thanks.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center text-white backdrop-blur-md">
+  <div class="bg-black/60 p-10 rounded-2xl text-center shadow-xl">
+    <h1 class="text-4xl font-bold mb-4">🎉 <span id="thank-you-text">Thank You!</span></h1>
+    <p class="text-lg" id="confirmation-text">Your booking has been successfully submitted.</p>
+    <p class="mt-2" id="follow-up-text">We'll contact you shortly to confirm all the details.</p>
+    <a href="index.html" class="inline-block mt-6 px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-semibold" id="home-button">Back to Home</a>
+
+    <div class="mt-6">
+      <button onclick="switchLanguage('en')" class="px-3 py-1 text-sm bg-white/20 rounded-lg mr-2">🇬🇧 English</button>
+      <button onclick="switchLanguage('ru')" class="px-3 py-1 text-sm bg-white/20 rounded-lg mr-2">🇷🇺 Русский</button>
+      <button onclick="switchLanguage('gr')" class="px-3 py-1 text-sm bg-white/20 rounded-lg">🇬🇷 Ελληνικά</button>
+    </div>
+  </div>
+
+  <script>
+    const translations = {
+      en: {
+        thank: "Thank You!",
+        confirm: "Your booking has been successfully submitted.",
+        follow: "We'll contact you shortly to confirm all the details.",
+        back: "Back to Home"
+      },
+      ru: {
+        thank: "Спасибо!",
+        confirm: "Ваша заявка успешно отправлена.",
+        follow: "Мы скоро свяжемся с вами для подтверждения деталей.",
+        back: "На главную"
+      },
+      gr: {
+        thank: "Ευχαριστούμε!",
+        confirm: "Η κράτησή σας υποβλήθηκε με επιτυχία.",
+        follow: "Θα επικοινωνήσουμε σύντομα μαζί σας για επιβεβαίωση.",
+        back: "Επιστροφή στην αρχική"
+      }
+    };
+
+    function switchLanguage(lang) {
+      localStorage.setItem('selectedLanguage', lang);
+      document.getElementById("thank-you-text").innerText = translations[lang].thank;
+      document.getElementById("confirmation-text").innerText = translations[lang].confirm;
+      document.getElementById("follow-up-text").innerText = translations[lang].follow;
+      document.getElementById("home-button").innerText = translations[lang].back;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedLang = localStorage.getItem('selectedLanguage') || 'en';
+      switchLanguage(savedLang);
+    });
+  </script>
+</body>
+</html>
