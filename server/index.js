@@ -4,11 +4,15 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import pg from 'pg';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
 const { Pool } = pg;
 const app = express();
 const port = process.env.PORT || 3000;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Подключение к PostgreSQL
 const pool = new Pool({
@@ -19,7 +23,7 @@ const pool = new Pool({
 // Мидлвары
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, '../public')));
 
 // API маршрут для приёма заказов
 app.post('/booking', async (req, res) => {
