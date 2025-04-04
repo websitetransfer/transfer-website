@@ -1,6 +1,7 @@
 {
   "name": "transfer123",
   "version": "1.0.0",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -18,10 +19,19 @@
   "homepage": "https://github.com/Nuver2/transfer123#readme",
   "description": "",
   "dependencies": {
+    "@adminjs/express": "^4.0.1",
+    "@adminjs/mongoose": "^4.1.0",
+    "@adminjs/typeorm": "^5.0.1",
+    "@tiptap/extension-character-count": "^2.11.7",
+    "@tiptap/pm": "^2.11.7",
+    "adminjs": "^7.8.15",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
-    "pg": "^8.14.1"
+    "mongoose": "^8.13.1",
+    "pg": "^8.14.1",
+    "reflect-metadata": "^0.1.14",
+    "typeorm": "^0.3.21"
   }
 }
