@@ -202,6 +202,7 @@
   </style>
 </head>
 
+
 <body class="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
   <!-- Progress Bar -->
   <div class="flex justify-center text-lg bg-black/20 backdrop-blur p-4 sticky top-0 z-10">
@@ -219,12 +220,11 @@
 
       <h3 class="text-2xl font-semibold mt-8 mb-4">Your Contact Details</h3>
       <form 
-        action="https://script.google.com/macros/s/AKfycby9lBfJZLeX7s0h1yxcXcSzA_jr2dusvzAcMia0tGkFlULde6aSkM_SnO68mLeRz4HVvQ/exec" 
-        method="POST" 
+        id="booking-form" 
         class="space-y-4" 
-        target="hidden_iframe" 
-        onsubmit="redirectToThankYou(); return validateForm();"
-      >
+        onsubmit="return sendBooking(event);"
+        >
+
         <input type="hidden" name="from" id="from">
         <input type="hidden" name="to" id="to">
         <input type="hidden" name="passengers" id="passengers">
@@ -247,8 +247,41 @@
 
         <button type="submit" class="mt-6 w-full bg-green-600 hover:bg-green-700 py-3 text-white rounded-lg text-lg font-semibold transition">Confirm Booking</button>
       </form>
-      <iframe name="hidden_iframe" style="display:none;"></iframe>
     </div>
   </div>
+  <!-- В самом конце файла -->
+<script>
+  async function sendBooking(event) {
+    event.preventDefault();
+
+    const form = document.getElementById('booking-form');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    data.passengers = parseInt(data.passengers);
+    data.babySeat = formData.get('babySeat') === 'Yes';
+    data.price = parseFloat(data.price);
+
+    try {
+      const res = await fetch('/booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (res.ok) {
+        window.location.href = 'thankyou.html';
+      } else {
+        const result = await res.json();
+        alert('❌ Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+      }
+    } catch (err) {
+      console.error('❌ Ошибка при fetch:', err);
+      alert('❌ Не удалось отправить данные. Попробуйте позже.');
+    }
+
+    return false;
+  }
+</script>
 </body>
 </html>
