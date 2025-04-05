@@ -28,17 +28,24 @@ app.use(express.static(path.join(__dirname, '../public')));
 // API маршрут для приёма заказов
 app.post('/booking', async (req, res) => {
   try {
+    console.log('🛬 Пришёл заказ:', req.body); // лог для отладки
+
     const {
       name, email, phone, from, to, datetime,
       passengers, luggage, flight, carType,
       price, babySeat, comment,
     } = req.body;
 
+    // 💡 Проверь, все ли поля приходят
+    if (!name || !phone || !from || !to || !datetime) {
+      return res.status(400).json({ success: false, error: 'Некоторые поля отсутствуют' });
+    }
+
     await pool.query(
       `INSERT INTO bookings
         (name, email, phone, from_location, to_location, datetime,
-         passengers, luggage, flight, car_type, price, baby_seat, comment)
-       VALUES
+          passengers, luggage, flight, car_type, price, baby_seat, comment)
+        VALUES
         ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
       [
         name, email, phone, from, to, datetime,
@@ -47,14 +54,10 @@ app.post('/booking', async (req, res) => {
       ]
     );
 
+    console.log('✅ Заказ успешно сохранён в базу');
     res.status(200).json({ success: true });
   } catch (err) {
-    console.error('Booking error:', err);
-    res.status(500).json({ success: false, error: 'Something went wrong' });
+    console.error('❌ Ошибка при бронировании:', err.message);
+    res.status(500).json({ success: false, error: 'Ошибка на сервере' });
   }
-});
-
-// Запуск сервера
-app.listen(port, () => {
-  console.log(`🚀 Server running at http://localhost:${port}`);
 });
