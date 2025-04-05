@@ -25,6 +25,10 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
+app.listen(port, () => {
+  console.log(`✅ Server running on port ${port}`);
+});
+
 // API маршрут для приёма заказов
 app.post('/booking', async (req, res) => {
   try {
